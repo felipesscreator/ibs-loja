@@ -1,0 +1,36 @@
+{
+  "name": "ibs-loja",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:native": "turbo -F native dev",
+    "dev:web": "turbo -F web dev",
+    "db:push": "turbo -F @ibs-loja/db db:push",
+    "db:studio": "turbo -F @ibs-loja/db db:studio",
+    "db:generate": "turbo -F @ibs-loja/db db:generate",
+    "db:migrate": "turbo -F @ibs-loja/db db:migrate",
+    "db:start": "turbo -F @ibs-loja/db db:start",
+    "db:watch": "turbo -F @ibs-loja/db db:watch",
+    "db:stop": "turbo -F @ibs-loja/db db:stop",
+    "db:down": "turbo -F @ibs-loja/db db:down"
+  },
+  "dependencies": {
+    "@ibs-loja/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@ibs-loja/config": "workspace:*",
+    "@types/node": "^22.13.14",
+    "turbo": "^2.8.12",
+    "typescript": "catalog:"
+  },
+  "packageManager": "pnpm@10.28.2"
+}

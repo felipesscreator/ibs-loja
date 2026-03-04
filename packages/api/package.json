@@ -1,0 +1,27 @@
+{
+  "name": "@ibs-loja/api",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@ibs-loja/auth": "workspace:*",
+    "@ibs-loja/db": "workspace:*",
+    "@ibs-loja/env": "workspace:*",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
+    "dotenv": "catalog:",
+    "next": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@ibs-loja/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

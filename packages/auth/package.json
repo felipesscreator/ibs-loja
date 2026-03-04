@@ -1,0 +1,24 @@
+{
+  "name": "@ibs-loja/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@ibs-loja/db": "workspace:*",
+    "@ibs-loja/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@ibs-loja/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

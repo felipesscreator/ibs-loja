@@ -1,0 +1,3 @@
+{
+  "extends": "@ibs-loja/config/tsconfig.base.json"
+}
