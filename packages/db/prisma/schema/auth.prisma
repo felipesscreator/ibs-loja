@@ -8,6 +8,8 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  role          Role      @default(SELLER)
+  sales         Sale[]
 
   @@unique([email])
   @@map("user")

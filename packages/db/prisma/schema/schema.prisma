@@ -7,3 +7,53 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  ADMIN
+  SELLER
+}
+
+model Supplier {
+  id        String    @id @default(cuid())
+  name      String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  @@map("supplier")
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  code        String      @unique
+  price       Decimal     @db.Decimal(10, 2)
+  amount      Int         @default(0)
+  supplierId  String
+  supplier    Supplier    @relation(fields: [supplierId], references: [id])
+  saleItems   SaleItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  @@map("product")
+}
+
+model Sale {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  items       SaleItem[]
+  totalValue  Decimal     @db.Decimal(10, 2)
+  createdAt   DateTime    @default(now())
+  @@map("sale")
+}
+
+model SaleItem {
+  id        String  @id @default(cuid())
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  @@unique([saleId, productId])
+  @@map("sale_item")
+}

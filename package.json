@@ -19,7 +19,8 @@
     "db:start": "turbo -F @ibs-loja/db db:start",
     "db:watch": "turbo -F @ibs-loja/db db:watch",
     "db:stop": "turbo -F @ibs-loja/db db:stop",
-    "db:down": "turbo -F @ibs-loja/db db:down"
+    "db:down": "turbo -F @ibs-loja/db db:down",
+    "db:seed": "tsx seed.ts"
   },
   "dependencies": {
     "@ibs-loja/env": "workspace:*",
@@ -29,8 +30,9 @@
   "devDependencies": {
     "@ibs-loja/config": "workspace:*",
     "@types/node": "^22.13.14",
+    "tsx": "^4.21.0",
     "turbo": "^2.8.12",
     "typescript": "catalog:"
   },
-  "packageManager": "pnpm@10.28.2"
+  "packageManager": "pnpm@10.31.0"
 }
