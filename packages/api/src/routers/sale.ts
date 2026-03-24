@@ -1,7 +1,10 @@
+import { TRPCError } from "@trpc/server";
 import prisma from "@ibs-loja/db";
 import { z } from "zod";
 
 import { protectedProcedure, router } from "../index";
+
+const COMMISSION_RATE = 0.15;
 
 const saleIdSchema = z.string();
 
@@ -62,11 +65,17 @@ export const saleRouter = router({
       });
 
       if (!sale) {
-        throw new Error("Sale not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Sale not found",
+        });
       }
 
       if (ctx.userRole !== "ADMIN" && sale.userId !== ctx.session.user.id) {
-        throw new Error("Access denied");
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Access denied",
+        });
       }
 
       return sale;
@@ -75,21 +84,29 @@ export const saleRouter = router({
   calculate: protectedProcedure
     .input(calculateSaleSchema)
     .mutation(async ({ input }) => {
+      const productIds = input.items.map((item) => item.productId);
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, name: true, price: true },
+      });
+
+      const productMap = new Map(products.map((p) => [p.id, p]));
       let totalValue = 0;
       const itemsWithPrice: {
         productId: string;
         productName: string;
         quantity: number;
-        unitPrice: unknown;
+        unitPrice: number;
         itemTotal: number;
       }[] = [];
 
       for (const item of input.items) {
-        const product = await prisma.product.findUnique({
-          where: { id: item.productId },
-        });
+        const product = productMap.get(item.productId);
         if (!product) {
-          throw new Error(`Product ${item.productId} not found`);
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Product not found`,
+          });
         }
         const itemTotal = Number(product.price) * item.quantity;
         totalValue += itemTotal;
@@ -97,7 +114,7 @@ export const saleRouter = router({
           productId: item.productId,
           productName: product.name,
           quantity: item.quantity,
-          unitPrice: product.price,
+          unitPrice: Number(product.price),
           itemTotal,
         });
       }
@@ -105,45 +122,54 @@ export const saleRouter = router({
       return {
         items: itemsWithPrice,
         totalValue,
-        totalToSuppliers: totalValue * 0.15,
+        totalToSuppliers: totalValue * COMMISSION_RATE,
       };
     }),
 
   create: protectedProcedure
     .input(createSaleSchema)
     .mutation(async ({ ctx, input }) => {
-      let totalValue = 0;
-      const saleItems: {
-        productId: string;
-        quantity: number;
-        unitPrice: unknown;
-      }[] = [];
-
-      for (const item of input.items) {
-        const product = await prisma.product.findUnique({
-          where: { id: item.productId },
-        });
-        if (!product) {
-          throw new Error(`Product ${item.productId} not found`);
-        }
-
-        if (product.amount < item.quantity) {
-          throw new Error(
-            `Insufficient stock for ${product.name}. Available: ${product.amount}, Requested: ${item.quantity}`,
-          );
-        }
-
-        const itemTotal = Number(product.price) * item.quantity;
-        totalValue += itemTotal;
-
-        saleItems.push({
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice: product.price,
-        });
-      }
+      const productIds = input.items.map((item) => item.productId);
 
       const sale = await prisma.$transaction(async (tx) => {
+        const products = await tx.product.findMany({
+          where: { id: { in: productIds } },
+        });
+
+        const productMap = new Map(products.map((p) => [p.id, p]));
+        let totalValue = 0;
+        const saleItems: {
+          productId: string;
+          quantity: number;
+          unitPrice: number;
+        }[] = [];
+
+        for (const item of input.items) {
+          const product = productMap.get(item.productId);
+          if (!product) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Product not found",
+            });
+          }
+
+          if (product.amount < item.quantity) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Insufficient stock for ${product.name}`,
+            });
+          }
+
+          const itemTotal = Number(product.price) * item.quantity;
+          totalValue += itemTotal;
+
+          saleItems.push({
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: Number(product.price),
+          });
+        }
+
         for (const item of saleItems) {
           await tx.product.update({
             where: { id: item.productId },
@@ -163,7 +189,7 @@ export const saleRouter = router({
               create: saleItems.map((item) => ({
                 productId: item.productId,
                 quantity: item.quantity,
-                unitPrice: item.unitPrice as `Decimal`,
+                unitPrice: item.unitPrice,
               })),
             },
           },
@@ -184,7 +210,7 @@ export const saleRouter = router({
 
       return {
         ...sale,
-        totalToSuppliers: totalValue * 0.15,
+        totalToSuppliers: Number(sale.totalValue) * COMMISSION_RATE,
       };
     }),
 });

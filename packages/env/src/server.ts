@@ -9,6 +9,7 @@ export const env = createEnv({
     BETTER_AUTH_URL: z.url(),
     CORS_ORIGIN: z.url(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+    ALLOW_SEED: z.enum(["true", "false"]).default("false"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import prisma from "@ibs-loja/db";
 import { z } from "zod";
 
@@ -6,12 +7,12 @@ import { adminProcedure, router } from "../index";
 const supplierIdSchema = z.string();
 
 const createSupplierSchema = z.object({
-  name: z.string().min(2),
+  name: z.string().min(2).max(255),
 });
 
 const updateSupplierSchema = z.object({
   id: z.string(),
-  name: z.string().min(2).optional(),
+  name: z.string().min(2).max(255).optional(),
 });
 
 export const supplierRouter = router({
@@ -33,14 +34,20 @@ export const supplierRouter = router({
       const supplier = await prisma.supplier.findUnique({
         where: { id: input },
         include: {
-          products: true,
+          products: {
+            take: 100,
+            orderBy: { createdAt: "desc" },
+          },
           _count: {
             select: { products: true },
           },
         },
       });
       if (!supplier) {
-        throw new Error("Supplier not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Supplier not found",
+        });
       }
       return supplier;
     }),
@@ -52,7 +59,10 @@ export const supplierRouter = router({
         where: { name: input.name },
       });
       if (existingSupplier) {
-        throw new Error("Supplier name already exists");
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Supplier name already exists",
+        });
       }
 
       const supplier = await prisma.supplier.create({
@@ -66,12 +76,22 @@ export const supplierRouter = router({
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
 
+      if (!data.name) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Name is required for update",
+        });
+      }
+
       if (data.name) {
         const existingSupplier = await prisma.supplier.findFirst({
           where: { name: data.name, NOT: { id } },
         });
         if (existingSupplier) {
-          throw new Error("Supplier name already exists");
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Supplier name already exists",
+          });
         }
       }
 
@@ -85,6 +105,17 @@ export const supplierRouter = router({
   delete: adminProcedure
     .input(supplierIdSchema)
     .mutation(async ({ input }) => {
+      const productCount = await prisma.product.count({
+        where: { supplierId: input },
+      });
+
+      if (productCount > 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot delete supplier with existing products",
+        });
+      }
+
       await prisma.supplier.delete({
         where: { id: input },
       });

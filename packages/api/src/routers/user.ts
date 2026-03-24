@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { auth } from "@ibs-loja/auth";
 import { randomBytes } from "crypto";
 import prisma from "@ibs-loja/db";
@@ -9,16 +10,16 @@ import { adminProcedure, router } from "../index";
 const userIdSchema = z.string();
 
 const createUserSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(8),
+  name: z.string().min(2).max(255),
+  email: z.string().email().max(255),
+  password: z.string().min(8).max(128),
   role: z.enum(["ADMIN", "SELLER"]),
 });
 
 const updateUserSchema = z.object({
   id: z.string(),
-  name: z.string().min(2).optional(),
-  email: z.string().email().optional(),
+  name: z.string().min(2).max(255).optional(),
+  email: z.string().email().max(255).optional(),
   role: z.enum(["ADMIN", "SELLER"]).optional(),
 });
 
@@ -55,7 +56,10 @@ export const userRouter = router({
       },
     });
     if (!user) {
-      throw new Error("User not found");
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "User not found",
+      });
     }
     return user;
   }),
@@ -67,11 +71,14 @@ export const userRouter = router({
         where: { email: input.email },
       });
       if (existingUser) {
-        throw new Error("Email already in use");
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Email already in use",
+        });
       }
 
-      const ctx = await auth.$context;
-      const hashedPassword = await ctx.password.hash(input.password);
+      const authCtx = await auth.$context;
+      const hashedPassword = await authCtx.password.hash(input.password);
       const userId = randomBytes(16).toString("hex");
 
       const user = await prisma.user.create({
@@ -103,7 +110,7 @@ export const userRouter = router({
 
   update: adminProcedure
     .input(updateUserSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
 
       if (data.email) {
@@ -111,8 +118,18 @@ export const userRouter = router({
           where: { email: data.email, NOT: { id } },
         });
         if (existingUser) {
-          throw new Error("Email already in use");
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Email already in use",
+          });
         }
+      }
+
+      if (data.role === "SELLER" && id === ctx.session.user.id) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot demote yourself to SELLER",
+        });
       }
 
       const user = await prisma.user.update({
@@ -132,7 +149,30 @@ export const userRouter = router({
 
   delete: adminProcedure
     .input(userIdSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      if (input === ctx.session.user.id) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot delete your own account",
+        });
+      }
+
+      const adminCount = await prisma.user.count({
+        where: { role: "ADMIN" },
+      });
+
+      const targetUser = await prisma.user.findUnique({
+        where: { id: input },
+        select: { role: true },
+      });
+
+      if (targetUser?.role === "ADMIN" && adminCount <= 1) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot delete the last admin",
+        });
+      }
+
       await prisma.user.delete({
         where: { id: input },
       });

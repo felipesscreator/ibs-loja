@@ -9,19 +9,28 @@ export async function createContext(req: NextRequest) {
     headers: req.headers,
   });
 
-  let userRole: Role = "SELLER";
+  if (!session?.user?.id) {
+    return {
+      session: null,
+      userRole: "SELLER" as Role,
+    };
+  }
 
-  if (session?.user?.id) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-    userRole = user?.role ?? "SELLER";
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  });
+
+  if (!user) {
+    return {
+      session: null,
+      userRole: "SELLER" as Role,
+    };
   }
 
   return {
     session,
-    userRole,
+    userRole: user.role,
   };
 }
 

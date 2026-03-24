@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import prisma from "@ibs-loja/db";
 import { z } from "zod";
 
@@ -7,18 +8,18 @@ const productIdSchema = z.string();
 const productCodeSchema = z.string();
 
 const createProductSchema = z.object({
-  name: z.string().min(2),
-  code: z.string().min(1),
-  price: z.number().positive(),
+  name: z.string().min(2).max(255),
+  code: z.string().min(1).max(50),
+  price: z.number().positive().max(999999999),
   amount: z.number().int().min(0).default(0),
   supplierId: z.string(),
 });
 
 const updateProductSchema = z.object({
   id: z.string(),
-  name: z.string().min(2).optional(),
-  code: z.string().min(1).optional(),
-  price: z.number().positive().optional(),
+  name: z.string().min(2).max(255).optional(),
+  code: z.string().min(1).max(50).optional(),
+  price: z.number().positive().max(999999999).optional(),
   amount: z.number().int().min(0).optional(),
   supplierId: z.string().optional(),
 });
@@ -46,7 +47,10 @@ export const productRouter = router({
       },
     });
     if (!product) {
-      throw new Error("Product not found");
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Product not found",
+      });
     }
     return product;
   }),
@@ -63,7 +67,10 @@ export const productRouter = router({
         },
       });
       if (!product) {
-        throw new Error("Product not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Product not found",
+        });
       }
       return product;
     }),
@@ -75,14 +82,20 @@ export const productRouter = router({
         where: { code: input.code },
       });
       if (existingProduct) {
-        throw new Error("Product code already exists");
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Product code already exists",
+        });
       }
 
       const supplier = await prisma.supplier.findUnique({
         where: { id: input.supplierId },
       });
       if (!supplier) {
-        throw new Error("Supplier not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Supplier not found",
+        });
       }
 
       const product = await prisma.product.create({
@@ -112,7 +125,10 @@ export const productRouter = router({
           where: { code: data.code, NOT: { id } },
         });
         if (existingProduct) {
-          throw new Error("Product code already exists");
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Product code already exists",
+          });
         }
       }
 
@@ -121,7 +137,10 @@ export const productRouter = router({
           where: { id: data.supplierId },
         });
         if (!supplier) {
-          throw new Error("Supplier not found");
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Supplier not found",
+          });
         }
       }
 
@@ -140,6 +159,17 @@ export const productRouter = router({
   delete: adminProcedure
     .input(productIdSchema)
     .mutation(async ({ input }) => {
+      const saleItemCount = await prisma.saleItem.count({
+        where: { productId: input },
+      });
+
+      if (saleItemCount > 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot delete product with existing sales",
+        });
+      }
+
       await prisma.product.delete({
         where: { id: input },
       });

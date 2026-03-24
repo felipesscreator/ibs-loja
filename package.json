@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@ibs-loja/env": "workspace:*",
+    "@trpc/react-query": "^11.13.4",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },

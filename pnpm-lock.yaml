@@ -6,9 +6,24 @@ settings:
 
 catalogs:
   default:
+    '@prisma/client':
+      specifier: ^7.2.0
+      version: 7.4.2
+    '@trpc/client':
+      specifier: ^11.7.2
+      version: 11.11.0
+    '@trpc/server':
+      specifier: ^11.7.2
+      version: 11.11.0
+    better-auth:
+      specifier: 1.5.2
+      version: 1.5.2
     dotenv:
       specifier: ^17.2.2
       version: 17.3.1
+    next:
+      specifier: ^16.1.1
+      version: 16.1.6
     typescript:
       specifier: ^5
       version: 5.9.3
@@ -23,6 +38,9 @@ importers:
       '@ibs-loja/env':
         specifier: workspace:*
         version: link:packages/env
+      '@trpc/react-query':
+        specifier: ^11.13.4
+        version: 11.13.4(@tanstack/react-query@5.90.21(react@19.2.4))(@trpc/client@11.13.4(@trpc/server@11.13.4(typescript@5.9.3))(typescript@5.9.3))(@trpc/server@11.13.4(typescript@5.9.3))(react@19.2.4)(typescript@5.9.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.3.1
@@ -1285,8 +1303,28 @@ packages:
       '@trpc/server': 11.11.0
       typescript: '>=5.7.2'
 
+  '@trpc/client@11.13.4':
+    resolution: {integrity: sha512-AOM7u2blAjjpAzEyDXm4bk8f1HML0sFLuSXPsqZHQX3XCIVo7+mlArEAGMbwEtTwW8hUocI0i3/9tVYUF4Nu0g==}
+    peerDependencies:
+      '@trpc/server': 11.13.4
+      typescript: '>=5.7.2'
+
+  '@trpc/react-query@11.13.4':
+    resolution: {integrity: sha512-YGdm8zl2iypiO3Uyw99oToGgnZ51BMoT0YLPkLod0bT7QqJX2oHzBzIBFOOfMupyLEH1pzdEC27F+fw9sAtQsA==}
+    peerDependencies:
+      '@tanstack/react-query': ^5.80.3
+      '@trpc/client': 11.13.4
+      '@trpc/server': 11.13.4
+      react: '>=18.2.0'
+      typescript: '>=5.7.2'
+
   '@trpc/server@11.11.0':
     resolution: {integrity: sha512-5CBK5Oit8qv2k2zgIHrUsa12tnCIVpZIJLvMa4n2tejuWz/d7Qb1B1v9zZioapr7y8sEvnk8zPcNnxcT2LlQxg==}
+    peerDependencies:
+      typescript: '>=5.7.2'
+
+  '@trpc/server@11.13.4':
+    resolution: {integrity: sha512-SZmLwi43KSp1D3jp2aPuzqhC644gIy87hgFuD9xWCTwFspH9Pr5DO2/JmpWjCqybTG2fTuKYzxFYLUGjTY5LGg==}
     peerDependencies:
       typescript: '>=5.7.2'
 
@@ -4096,7 +4134,24 @@ snapshots:
       '@trpc/server': 11.11.0(typescript@5.9.3)
       typescript: 5.9.3
 
+  '@trpc/client@11.13.4(@trpc/server@11.13.4(typescript@5.9.3))(typescript@5.9.3)':
+    dependencies:
+      '@trpc/server': 11.13.4(typescript@5.9.3)
+      typescript: 5.9.3
+
+  '@trpc/react-query@11.13.4(@tanstack/react-query@5.90.21(react@19.2.4))(@trpc/client@11.13.4(@trpc/server@11.13.4(typescript@5.9.3))(typescript@5.9.3))(@trpc/server@11.13.4(typescript@5.9.3))(react@19.2.4)(typescript@5.9.3)':
+    dependencies:
+      '@tanstack/react-query': 5.90.21(react@19.2.4)
+      '@trpc/client': 11.13.4(@trpc/server@11.13.4(typescript@5.9.3))(typescript@5.9.3)
+      '@trpc/server': 11.13.4(typescript@5.9.3)
+      react: 19.2.4
+      typescript: 5.9.3
+
   '@trpc/server@11.11.0(typescript@5.9.3)':
+    dependencies:
+      typescript: 5.9.3
+
+  '@trpc/server@11.13.4(typescript@5.9.3)':
     dependencies:
       typescript: 5.9.3
 

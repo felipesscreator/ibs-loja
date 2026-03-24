@@ -1,24 +1,26 @@
 import type { AppRouter } from "@ibs-loja/api/routers/index";
 
-import { QueryCache, QueryClient } from "@tanstack/react-query";
-import { createTRPCClient, httpBatchLink } from "@trpc/client";
-import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { createTRPCReact, httpBatchLink } from "@trpc/react-query";
 import { toast } from "sonner";
 
+export const trpc = createTRPCReact<AppRouter>();
+
 export const queryClient = new QueryClient({
-  queryCache: new QueryCache({
-    onError: (error, query) => {
-      toast.error(error.message, {
-        action: {
-          label: "retry",
-          onClick: query.invalidate,
-        },
-      });
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60,
+      retry: 1,
     },
-  }),
+    mutations: {
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    },
+  },
 });
 
-const trpcClient = createTRPCClient<AppRouter>({
+export const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
       url: "/api/trpc",
@@ -30,9 +32,4 @@ const trpcClient = createTRPCClient<AppRouter>({
       },
     }),
   ],
-});
-
-export const trpc = createTRPCOptionsProxy<AppRouter>({
-  client: trpcClient,
-  queryClient,
 });
